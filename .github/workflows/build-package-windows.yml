@@ -62,6 +62,8 @@ jobs:
     # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
     # See also its build scripts.
     steps:
+      - uses: actions/checkout@v4
+    #   - uses: OptimalCNC/download_from_latest_release@v1
 
       - name: install micromamba
         # The windows-2019 comes with miniconda installed, which does not have mamba (which is faster).
