@@ -1,35 +1,17 @@
 name: Build and test packages on windows2019
 on:
   push:
-    paths-ignore:
-      - .devcontainer/**
-      - .github/**
-      - '!.github/workflows/build-package-windows.yml'
-      - optcnc_doc/**
-      - .*
-  pull_request:
-    paths-ignore:
-      - .devcontainer/**
-      - .github/**
-      - '!.github/workflows/build-package-windows.yml'
-      - optcnc_doc/**
-      - .*
 
 jobs:
 
   build-and-test:
     runs-on: windows-2019
-    # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
-    # See also its build scripts.
     steps:
       - uses: actions/checkout@v4
-    #   - uses: OptimalCNC/download_from_latest_release@v1
-
       - name: install micromamba
-        # The windows-2019 comes with miniconda installed, which does not have mamba (which is faster).
-        # We use micromamba since it is small, fast and self-contained.
         uses: mamba-org/setup-micromamba@v1.8.1
         with:
           environment-file: environment.yaml
           cache-environment: true
           init-shell: none
+          micromamba-version: '1.5.10-0'
