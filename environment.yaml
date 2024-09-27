@@ -1,7 +1,5 @@
 name: ros_env
 channels:
-  - conda-forge
-  - robostack-staging
 dependencies:
   - pip
   - pip:
