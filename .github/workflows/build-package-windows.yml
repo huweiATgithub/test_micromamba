@@ -62,22 +62,6 @@ jobs:
     # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
     # See also its build scripts.
     steps:
-      - uses: actions/checkout@v4
-      - uses: OptimalCNC/download_from_latest_release@v1
-        with:
-          save-path: "gcode_parser.exe"
-          owner: "OptimalCNC"
-          repo: "gcode_parser"
-          token: ${{ secrets.OPTCNC_SECRET }}
-          asset-name-pattern: "gcode_parser.*\\.exe$"
-          
-      - uses: OptimalCNC/download_from_latest_release@v1
-        with:
-          save-path: "promotion.exe"
-          owner: "OptimalCNC"
-          repo: "promotion_release"
-          token: ${{ secrets.OPTCNC_SECRET }}
-          asset-name-pattern: "promotion.*release\\.exe$"
 
       - name: install micromamba
         # The windows-2019 comes with miniconda installed, which does not have mamba (which is faster).
