@@ -3,18 +3,6 @@ channels:
   - conda-forge
   - robostack-staging
 dependencies:
-  - ros-humble-ros-base 
-  - ros-humble-ros-testing
-  - ros-humble-test-msgs
-  # to match the CMake version in ubuntu:jammy
-  # rosidl_generator_py_generate_interfaces.cmake(https://github.com/ros2/rosidl_python/blob/humble/rosidl_generator_py/cmake/rosidl_generator_py_generate_interfaces.cmake)
-  # will raise warning after cmake version 3.27
-  - cmake=3.22   
-  - pkg-config
-  - ninja
-  - colcon-common-extensions
-  #Subsequent versions are not compatible with colcon, see this issue (https://github.com/pypa/setuptools/issues/4498) for details.
-  - setuptools<=70.0.0
   - pip
   - pip:
     - PyQt6==6.5.3

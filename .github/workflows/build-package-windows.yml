@@ -16,43 +16,6 @@ on:
       - .*
 
 jobs:
-  build-and-test-self-hosted:
-    runs-on: [self-hosted, windows, x64]
-    if: >
-      (github.event_name == 'push' && github.repository_owner == 'OptimalCNC') ||
-      (github.event_name == 'pull_request' && startswith(github.event.pull_request.base.repo.full_name, 'OptimalCNC'))
-    steps:
-      - uses: actions/checkout@v4
-      - name: find MSVC edition
-        id: msvc
-        shell: cmd
-        run: |
-          SETLOCAL EnableDelayedExpansion
-
-          set "VS_EDITIONS=Community Professional Enterprise BuildTools"
-          for %%E in (%VS_EDITIONS%) do (
-            set "VCVARS_PATH=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\%%E\VC\Auxiliary\Build\vcvars64.bat"
-            if exist "!VCVARS_PATH!" (
-              echo Found Visual Studio: %%E
-              echo VCVARS_PATH=!VCVARS_PATH! >> %GITHUB_OUTPUT%
-              exit /b 0
-            )
-          )
-      - name: build all packages
-        shell: cmd
-        run: |
-          SETLOCAL EnableDelayedExpansion
-          call "${{ steps.msvc.outputs.VCVARS_PATH }}"
-          micromamba shell hook -s cmd.exe
-          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
-      
-      - name: test all packages
-        shell: cmd
-        run: |
-          SETLOCAL EnableDelayedExpansion
-          call "${{ steps.msvc.outputs.VCVARS_PATH }}"
-          micromamba shell hook -s cmd.exe
-          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
 
   build-and-test:
     if: >
@@ -73,50 +36,3 @@ jobs:
           environment-file: environment.yaml
           cache-environment: true
           init-shell: none
-
-      # --- installation of QT------
-      - name: get pyqt version
-        id: get-version
-        shell: cmd
-        run: |
-          micromamba shell hook -s cmd.exe
-          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
-          pip show PyQt6 > temp.txt
-          type temp.txt
-          for /f "tokens=2 delims= " %%i in ('type temp.txt ^| findstr /C:"Version"') do echo pyqt-version=%%i>> %GITHUB_OUTPUT%
-          echo %PYQT_VERSION%
-          del temp.txt
-          
-      - name: Set up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.11.9'
-          
-      - name: Install AQt Installer
-        run: |
-          pip install aqtinstall
-          aqt install-qt windows desktop ${{ steps.get-version.outputs.pyqt-version }} win64_msvc2019_64 --outputdir C:\Qt
-      
-      - name: build all packages
-        shell: cmd
-        run: |
-          SETLOCAL EnableDelayedExpansion
-          call gcode_parser.exe /S || exit /b !ERRORLEVEL!
-          call promotion.exe /S || exit /b !ERRORLEVEL!
-          call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          micromamba shell hook -s cmd.exe
-          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
-      
-      # The retry action does not work well for CMD. 
-      # It has limited outputs and does not execute commands starts from the second one.
-      # https://github.com/huweiATgithub/retry
-      # Step has an option `continue-on-error`, but how to use it to retry testing and mark the job as failed if it fails after all retries is not clear.
-      # We give up automatically retrying the test for now.
-
-      - name: test all packages
-        shell: cmd
-        run: |
-          SETLOCAL EnableDelayedExpansion
-          call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          micromamba shell hook -s cmd.exe
-          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
