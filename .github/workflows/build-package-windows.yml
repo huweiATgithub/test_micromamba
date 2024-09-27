@@ -38,6 +38,21 @@ jobs:
               exit /b 0
             )
           )
+      - name: build all packages
+        shell: cmd
+        run: |
+          SETLOCAL EnableDelayedExpansion
+          call "${{ steps.msvc.outputs.VCVARS_PATH }}"
+          micromamba shell hook -s cmd.exe
+          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
+      
+      - name: test all packages
+        shell: cmd
+        run: |
+          SETLOCAL EnableDelayedExpansion
+          call "${{ steps.msvc.outputs.VCVARS_PATH }}"
+          micromamba shell hook -s cmd.exe
+          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
 
   build-and-test:
     if: >
@@ -47,11 +62,27 @@ jobs:
     # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
     # See also its build scripts.
     steps:
+      - uses: actions/checkout@v4
+      - uses: OptimalCNC/download_from_latest_release@v1
+        with:
+          save-path: "gcode_parser.exe"
+          owner: "OptimalCNC"
+          repo: "gcode_parser"
+          token: ${{ secrets.OPTCNC_SECRET }}
+          asset-name-pattern: "gcode_parser.*\\.exe$"
           
+      - uses: OptimalCNC/download_from_latest_release@v1
+        with:
+          save-path: "promotion.exe"
+          owner: "OptimalCNC"
+          repo: "promotion_release"
+          token: ${{ secrets.OPTCNC_SECRET }}
+          asset-name-pattern: "promotion.*release\\.exe$"
+
       - name: install micromamba
         # The windows-2019 comes with miniconda installed, which does not have mamba (which is faster).
         # We use micromamba since it is small, fast and self-contained.
-        uses: mamba-org/setup-micromamba@v1.8.1
+        uses: mamba-org/setup-micromamba@v1.8.0
         with:
           environment-file: environment.yml
           cache-environment: true
@@ -68,6 +99,7 @@ jobs:
           type temp.txt
           for /f "tokens=2 delims= " %%i in ('type temp.txt ^| findstr /C:"Version"') do echo pyqt-version=%%i>> %GITHUB_OUTPUT%
           echo %PYQT_VERSION%
+          del temp.txt
           
       - name: Set up Python
         uses: actions/setup-python@v3
@@ -78,3 +110,27 @@ jobs:
         run: |
           pip install aqtinstall
           aqt install-qt windows desktop ${{ steps.get-version.outputs.pyqt-version }} win64_msvc2019_64 --outputdir C:\Qt
+      
+      - name: build all packages
+        shell: cmd
+        run: |
+          SETLOCAL EnableDelayedExpansion
+          call gcode_parser.exe /S || exit /b !ERRORLEVEL!
+          call promotion.exe /S || exit /b !ERRORLEVEL!
+          call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          micromamba shell hook -s cmd.exe
+          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
+      
+      # The retry action does not work well for CMD. 
+      # It has limited outputs and does not execute commands starts from the second one.
+      # https://github.com/huweiATgithub/retry
+      # Step has an option `continue-on-error`, but how to use it to retry testing and mark the job as failed if it fails after all retries is not clear.
+      # We give up automatically retrying the test for now.
+
+      - name: test all packages
+        shell: cmd
+        run: |
+          SETLOCAL EnableDelayedExpansion
+          call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          micromamba shell hook -s cmd.exe
+          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
