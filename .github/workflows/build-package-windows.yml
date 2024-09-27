@@ -1,0 +1,80 @@
+name: Build and test packages on windows2019
+on:
+  push:
+    paths-ignore:
+      - .devcontainer/**
+      - .github/**
+      - '!.github/workflows/build-package-windows.yml'
+      - optcnc_doc/**
+      - .*
+  pull_request:
+    paths-ignore:
+      - .devcontainer/**
+      - .github/**
+      - '!.github/workflows/build-package-windows.yml'
+      - optcnc_doc/**
+      - .*
+
+jobs:
+  build-and-test-self-hosted:
+    runs-on: [self-hosted, windows, x64]
+    if: >
+      (github.event_name == 'push' && github.repository_owner == 'OptimalCNC') ||
+      (github.event_name == 'pull_request' && startswith(github.event.pull_request.base.repo.full_name, 'OptimalCNC'))
+    steps:
+      - uses: actions/checkout@v4
+      - name: find MSVC edition
+        id: msvc
+        shell: cmd
+        run: |
+          SETLOCAL EnableDelayedExpansion
+
+          set "VS_EDITIONS=Community Professional Enterprise BuildTools"
+          for %%E in (%VS_EDITIONS%) do (
+            set "VCVARS_PATH=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\%%E\VC\Auxiliary\Build\vcvars64.bat"
+            if exist "!VCVARS_PATH!" (
+              echo Found Visual Studio: %%E
+              echo VCVARS_PATH=!VCVARS_PATH! >> %GITHUB_OUTPUT%
+              exit /b 0
+            )
+          )
+
+  build-and-test:
+    if: >
+      (!((github.event_name == 'push' && github.repository_owner == 'OptimalCNC') ||
+      (github.event_name == 'pull_request' && startswith(github.event.pull_request.base.repo.full_name, 'OptimalCNC'))))
+    runs-on: windows-2019
+    # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
+    # See also its build scripts.
+    steps:
+          
+      - name: install micromamba
+        # The windows-2019 comes with miniconda installed, which does not have mamba (which is faster).
+        # We use micromamba since it is small, fast and self-contained.
+        uses: mamba-org/setup-micromamba@v1.8.1
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+          init-shell: none
+
+      # --- installation of QT------
+      - name: get pyqt version
+        id: get-version
+        shell: cmd
+        run: |
+          micromamba shell hook -s cmd.exe
+          call "%MAMBA_ROOT_PREFIX%\Scripts\activate.bat" ros_env
+          pip show PyQt6 > temp.txt
+          type temp.txt
+          for /f "tokens=2 delims= " %%i in ('type temp.txt ^| findstr /C:"Version"') do echo pyqt-version=%%i>> %GITHUB_OUTPUT%
+          echo %PYQT_VERSION%
+          
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11.9'
+          
+      - name: Install AQt Installer
+        run: |
+          pip install aqtinstall
+          aqt install-qt windows desktop ${{ steps.get-version.outputs.pyqt-version }} win64_msvc2019_64 --outputdir C:\Qt
