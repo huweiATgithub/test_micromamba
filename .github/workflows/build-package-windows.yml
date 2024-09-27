@@ -1,6 +1,7 @@
 name: Build and test packages on windows2019
 on:
   push:
+  workflow_dispatch:
 
 jobs:
 
