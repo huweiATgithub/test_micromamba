@@ -6,5 +6,3 @@ dependencies:
   - pip
   - pip:
     - PyQt6==6.5.3
-    # PyQt6 does not pin the version of PyQt6-Qt6, which will cause DLL import error, so we manually do it here.
-    - PyQt6-Qt6==6.5.3

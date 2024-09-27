@@ -18,9 +18,6 @@ on:
 jobs:
 
   build-and-test:
-    if: >
-      (!((github.event_name == 'push' && github.repository_owner == 'OptimalCNC') ||
-      (github.event_name == 'pull_request' && startswith(github.event.pull_request.base.repo.full_name, 'OptimalCNC'))))
     runs-on: windows-2019
     # Check https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md for available software.
     # See also its build scripts.
